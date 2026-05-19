@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: pinit-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/pinit_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${CLERK_ISSUER_URI}
