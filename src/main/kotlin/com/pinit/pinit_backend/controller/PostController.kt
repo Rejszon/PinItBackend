@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,9 +33,22 @@ class PostController(private val postService: PostService) {
     fun getNearbyPosts(
         @RequestParam lat: Double,
         @RequestParam lng: Double,
-        @RequestParam(defaultValue = "5000.0") radius: Double
+        @RequestParam(defaultValue = "5000.0") radius: Double,
+        @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<List<PostDto>> {
-        val nearbyPosts = postService.getNearbyPosts(lat, lng, radius)
+        val clerkUserId = jwt.subject
+        val nearbyPosts = postService.getNearbyPosts(lat, lng, radius, clerkUserId)
         return ResponseEntity.ok(nearbyPosts)
+    }
+
+    @PostMapping("/{postId}/like")
+    fun toggleLike(
+        @PathVariable postId: String,
+        @AuthenticationPrincipal jwt: Jwt
+    ): ResponseEntity<Map<String, Boolean>> {
+        val clerkUserId = jwt.subject
+        val isNowLiked = postService.toggleLike(postId, clerkUserId)
+
+        return ResponseEntity.ok(mapOf("liked" to isNowLiked))
     }
 }

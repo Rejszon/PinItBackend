@@ -9,17 +9,21 @@ data class PostDto(
     val latitude: Double,
     val longitude: Double,
     val authorUsername: String,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+    val likesCount: Int,
+    val likedByMe: Boolean
 ) {
     companion object {
-        fun fromEntity(post: Post): PostDto {
+        fun fromEntity(post: Post, currentUserId: String? = null): PostDto {
             return PostDto(
                 id = post.id,
                 content = post.content,
                 latitude = post.location.y,
                 longitude = post.location.x,
                 authorUsername = post.user.username,
-                createdAt = post.createdAt
+                createdAt = post.createdAt,
+                likesCount = post.likes.size,
+                likedByMe = currentUserId != null && post.likes.any { it.userId == currentUserId }
             )
         }
     }

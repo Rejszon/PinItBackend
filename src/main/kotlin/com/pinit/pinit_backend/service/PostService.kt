@@ -1,8 +1,10 @@
 package com.pinit.pinit_backend.service
 
+import com.pinit.pinit_backend.entity.Like
 import com.pinit.pinit_backend.entity.Post
 import com.pinit.pinit_backend.model.request.CreatePostRequest
 import com.pinit.pinit_backend.model.response.PostDto
+import com.pinit.pinit_backend.repository.LikeRepository
 import com.pinit.pinit_backend.repository.PostRepository
 import com.pinit.pinit_backend.repository.UserRepository
 import jakarta.transaction.Transactional
@@ -14,7 +16,8 @@ import org.springframework.stereotype.Service
 @Service
 class PostService(
     val postRepository: PostRepository,
-    val userRepository: UserRepository
+    val userRepository: UserRepository,
+    val likeRepository: LikeRepository,
 ) {
     private val geometryFactory = GeometryFactory(PrecisionModel(), 4326)
     @Transactional
@@ -32,10 +35,37 @@ class PostService(
         return postRepository.save(newPost)
     }
 
+    fun getNearbyPosts(lat: Double, lng: Double, radius: Double, currentUserId: String): List<PostDto> {
+        val projections = postRepository.findNearbyPostsForFeed(lat, lng, radius, currentUserId)
 
-    fun getNearbyPosts(latitude: Double, longitude: Double, radiusInMeters: Double): List<PostDto> {
-        val posts = postRepository.findNearbyPosts(latitude, longitude, radiusInMeters)
+        return projections.map { proj ->
+            PostDto(
+                id = proj.id,
+                content = proj.content,
+                latitude = proj.latitude,
+                longitude = proj.longitude,
+                authorUsername = proj.authorUsername,
+                createdAt = proj.createdAt,
+                likesCount = proj.likesCount,
+                likedByMe = proj.likedByMe,
+            )
+        }
+    }
 
-        return posts.map { PostDto.fromEntity(it) }
+    fun toggleLike(postId: String, clerkUserId: String): Boolean {
+        val post = postRepository.findById(postId).orElseThrow {
+            IllegalArgumentException("Post not found")
+        }
+
+        val existingLike = likeRepository.findByPostIdAndUserId(postId, clerkUserId)
+
+        return if (existingLike != null) {
+            likeRepository.delete(existingLike)
+            false
+        } else {
+            val newLike = Like(post = post, userId = clerkUserId)
+            likeRepository.save(newLike)
+            true
+        }
     }
 }
